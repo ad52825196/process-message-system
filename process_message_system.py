@@ -75,12 +75,14 @@ class MessageProc():
             while True:
                 try:
                     self.queue.put(pickle.load(pipe))
-                    self.arrived_condition.notify()
+                    with self.arrived_condition:
+                        self.arrived_condition.notify()
                 except EOFError:
                     time.sleep(1)
 
     def clean_up(self):
         """Close all the pipes to which this process has written and remove the pipe of itself"""
-        for pid, pipe in self.pipes_written:
+        for pid, pipe in self.pipes_written.items():
             pipe.close();
-        os.remove(self.pipe_path)
+        if os.path.exists(self.pipe_path):
+            os.remove(self.pipe_path)
