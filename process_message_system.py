@@ -32,6 +32,9 @@ class MessageProc():
 
     def main(self):
         """Set up the communication mechanism"""
+        if not os.path.exists(self.pipe_path):
+            os.mkfifo(self.pipe_path)
+        threading.Thread(target = self.read_pipe, daemon = True).start()
 
     def start(self, *args):
         """
@@ -41,3 +44,13 @@ class MessageProc():
             process id of the new process
 
         """
+
+    def read_pipe(self):
+        """Continuously load data from pipe into synchronized queue"""
+        with open(self.pipe_path, 'rb') as pipe:
+            while True:
+                try:
+                    self.queue.put(pickle.load(pipe))
+                    self.arrived_condition.notify()
+                except EOFError:
+                    time.sleep(1)
