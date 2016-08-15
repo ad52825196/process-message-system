@@ -45,6 +45,11 @@ class MessageProc():
             process id of the new process
 
         """
+        pid = os.fork()
+        if pid == 0:
+            self.main(*args)
+        else:
+            return pid
 
     def read_pipe(self):
         """Continuously load data from pipe into synchronized queue"""
