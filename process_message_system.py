@@ -34,6 +34,7 @@ class MessageProc():
         """Set up the communication mechanism"""
         if not os.path.exists(self.pipe_path):
             os.mkfifo(self.pipe_path)
+        atexit.register(self.clean_up)
         threading.Thread(target = self.read_pipe, daemon = True).start()
 
     def start(self, *args):
@@ -54,3 +55,9 @@ class MessageProc():
                     self.arrived_condition.notify()
                 except EOFError:
                     time.sleep(1)
+
+    def clean_up(self):
+        """Close all the pipes to which this process has written and remove the pipe of itself"""
+        for pid, pipe in self.pipes_written:
+            pipe.close();
+        os.remove(self.pipe_path)
