@@ -23,15 +23,17 @@ class TimeOut():
 class MessageProc():
     pipe_path_prefix = tempfile.gettempdir() + '/pipe'
 
-    def __init__(self):
-        self.arrived_condition = threading.Condition()
+    def init(self):
+        """Initialise all instance fields"""
         self.pipe_path = self.pipe_path_prefix + str(os.getpid())
+        self.message_list = []
         self.pipes_written = {}
         self.queue = queue.Queue()
-        self.message_list = []
+        self.arrived_condition = threading.Condition()
 
     def main(self):
         """Set up the communication mechanism"""
+        self.init()
         if not os.path.exists(self.pipe_path):
             os.mkfifo(self.pipe_path)
         atexit.register(self.clean_up)
