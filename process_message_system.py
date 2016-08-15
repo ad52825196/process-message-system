@@ -68,6 +68,7 @@ class MessageProc():
             pipe = open(pipe_to_write, 'wb')
             self.pipes_written[pid] = pipe
         pickle.dump((label, values), pipe)
+        pipe.flush()
 
     def receive(self, *args):
         """
