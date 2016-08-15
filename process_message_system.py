@@ -69,6 +69,22 @@ class MessageProc():
             self.pipes_written[pid] = pipe
         pickle.dump((label, values), pipe)
 
+    def check_match(message, expected_messages_dict):
+        """
+        Check whether the message is expected
+
+        Returns:
+            the corresponding expected message or None if the message is not expected
+
+        """
+        labels = [message[0], ANY]
+        for label in labels:
+            if label in expected_messages_dict:
+                expected_message = expected_messages_dict[label]
+                if expected_message.guard():
+                    return expected_message
+        return None
+
     def read_pipe(self):
         """Continuously load data from pipe into synchronized queue"""
         with open(self.pipe_path, 'rb') as pipe:
