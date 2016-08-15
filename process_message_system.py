@@ -55,11 +55,11 @@ class MessageProc():
             return pid
 
     def give(self, pid, label, *values):
-        """Send a message to the process with pid. If its pipe does noe exist, wait for a while and check again. If its pipe was there but has disappeared, which means the receiver has left, do not send messages anymore."""
-        pipe_to_write = self.pipe_path_prefix + pid
-        if pid in self.pipes_written.keys():
+        """Send a message to the process with pid. If its pipe does noe exist, wait for a while and check again. If its pipe was there but has disappeared, which means the receiver has left, do not send messages anymore and raise an exception"""
+        pipe_to_write = self.pipe_path_prefix + str(pid)
+        if pid in self.pipes_written:
             if not os.path.exists(pipe_to_write):
-                raise ReceiverHasExitedError
+                raise IOError("Receiver has exited")
             else:
                 pipe = self.pipes_written[pid]
         else:
