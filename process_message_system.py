@@ -69,6 +69,69 @@ class MessageProc():
             self.pipes_written[pid] = pipe
         pickle.dump((label, values), pipe)
 
+    def receive(self, *args):
+        """
+        Find the first message in the message list which matches one of the arguments and delete this message from the list. If nothing in the message list matches, blocks and imports data from the queue until there is a message coming in which is expected
+
+        Returns:
+            whatever the action function inside the matched argument returns
+
+        """
+        timeout = None
+        expected_messages_dict = {}
+        for expected_message in args:
+            if isinstance(expected_message, Message) and expected_message.label not in expected_messages_dict:
+                expected_messages_dict[expected_message.label] = expected_message
+            elif isinstance(expected_message, TimeOut) and timeout is None:
+                timeout = expected_message
+
+        matched_expected = None
+        matched_message = None
+        for message in self.message_list[:]:
+            matched_expected = MessageProc.check_match(message, expected_messages_dict)
+            if matched_expected is not None:
+                matched_message = message
+                self.message_list.remove(message)
+                break
+        while matched_expected is None and not self.queue.empty():
+            try:
+                message = self.queue.get(False)
+            except queue.Empty:
+                break
+            else:
+                matched_expected = MessageProc.check_match(message, expected_messages_dict)
+                if matched_expected is None:
+                    self.message_list.append(message)
+                else:
+                    matched_message = message
+                self.queue.task_done()
+        if matched_expected is not None:
+            return matched_expected.action(*matched_message[1])
+
+        waiting_time = None
+        if timeout is not None:
+            waiting_time = timeout.time
+        while True:
+            try:
+                if waiting_time is not None and waiting_time <= 0:
+                    raise queue.Empty()
+                start_time = time.time()
+                message = self.queue.get(timeout = waiting_time)
+                end_time = time.time()
+                if waiting_time is not None:
+                    waiting_time -= end_time - start_time
+            except queue.Empty:
+                return timeout.action()
+            else:
+                matched_expected = MessageProc.check_match(message, expected_messages_dict)
+                if matched_expected is None:
+                    self.message_list.append(message)
+                else:
+                    matched_message = message
+                self.queue.task_done()
+                if matched_expected is not None:
+                    return matched_expected.action(*matched_message[1])
+
     def check_match(message, expected_messages_dict):
         """
         Check whether the message is expected
