@@ -50,6 +50,7 @@ class MessageProc():
         pid = os.fork()
         if pid == 0:
             self.main(*args)
+            sys.exit()
         else:
             return pid
 
