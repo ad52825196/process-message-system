@@ -1,10 +1,16 @@
+import atexit
 import os
+import pickle
+import queue
 import sys
+import tempfile
+import threading
+import time
 
 ANY = 'any'
 
 class Message():
-    def __init__(self, label, guard = lambda: True, action):
+    def __init__(self, label, guard = lambda: True, action = lambda: None):
         self.label = label
         self.guard = guard
         self.action = action
