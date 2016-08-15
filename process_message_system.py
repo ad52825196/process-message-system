@@ -51,6 +51,21 @@ class MessageProc():
         else:
             return pid
 
+    def give(self, pid, label, *values):
+        """Send a message to the process with pid. If its pipe does noe exist, wait for a while and check again. If its pipe was there but has disappeared, which means the receiver has left, do not send messages anymore."""
+        pipe_to_write = self.pipe_path_prefix + pid
+        if pid in self.pipes_written.keys():
+            if not os.path.exists(pipe_to_write):
+                raise ReceiverHasExitedError
+            else:
+                pipe = self.pipes_written[pid]
+        else:
+            while not os.path.exists(pipe_to_write):
+                time.sleep(1)
+            pipe = open(pipe_to_write, 'wb')
+            self.pipes_written[pid] = pipe
+        pickle.dump((label, values), pipe)
+
     def read_pipe(self):
         """Continuously load data from pipe into synchronized queue"""
         with open(self.pipe_path, 'rb') as pipe:
