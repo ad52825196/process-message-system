@@ -79,61 +79,53 @@ class MessageProc():
 
         """
         timeout = None
-        expected_messages_dict = {}
+        expected_messages_list = []
         for expected_message in args:
-            if isinstance(expected_message, Message) and expected_message.label not in expected_messages_dict:
-                expected_messages_dict[expected_message.label] = expected_message
+            if isinstance(expected_message, Message):
+                expected_messages_list.append(expected_message)
             elif isinstance(expected_message, TimeOut) and timeout is None:
                 timeout = expected_message
 
         matched_expected = None
         matched_message = None
         for message in self.message_list[:]:
-            matched_expected = MessageProc.check_match(message, expected_messages_dict)
+            matched_expected = MessageProc.check_match(message, expected_messages_list)
             if matched_expected is not None:
                 matched_message = message
                 self.message_list.remove(message)
-                break
-        while matched_expected is None and not self.queue.empty():
-            try:
-                message = self.queue.get(False)
-            except queue.Empty:
-                break
-            else:
-                matched_expected = MessageProc.check_match(message, expected_messages_dict)
-                if matched_expected is None:
-                    self.message_list.append(message)
-                else:
-                    matched_message = message
-                self.queue.task_done()
-        if matched_expected is not None:
-            return matched_expected.action(*matched_message[1])
+                return matched_expected.action(*matched_message[1])
 
+        queue_has_been_emptied = False
         waiting_time = None
         if timeout is not None:
             waiting_time = timeout.time
-        while True:
+        while matched_expected is None:
             try:
-                if waiting_time is not None and waiting_time <= 0:
-                    raise queue.Empty()
-                start_time = time.time()
-                message = self.queue.get(timeout = waiting_time)
-                end_time = time.time()
-                if waiting_time is not None:
-                    waiting_time -= end_time - start_time
+                if not queue_has_been_emptied:
+                    message = self.queue.get(False)
+                else:
+                    if waiting_time is not None and waiting_time <= 0:
+                        raise queue.Empty()
+                    start_time = time.time()
+                    message = self.queue.get(timeout = waiting_time)
+                    end_time = time.time()
+                    if waiting_time is not None:
+                        waiting_time -= end_time - start_time
             except queue.Empty:
-                return timeout.action()
+                if not queue_has_been_emptied:
+                    queue_has_been_emptied = True
+                else:
+                    return timeout.action()
             else:
-                matched_expected = MessageProc.check_match(message, expected_messages_dict)
+                matched_expected = MessageProc.check_match(message, expected_messages_list)
                 if matched_expected is None:
                     self.message_list.append(message)
                 else:
                     matched_message = message
                 self.queue.task_done()
-                if matched_expected is not None:
-                    return matched_expected.action(*matched_message[1])
+        return matched_expected.action(*matched_message[1])
 
-    def check_match(message, expected_messages_dict):
+    def check_match(message, expected_messages_list):
         """
         Check whether the message is expected
 
@@ -141,12 +133,9 @@ class MessageProc():
             the corresponding expected message or None if the message is not expected
 
         """
-        labels = [message[0], ANY]
-        for label in labels:
-            if label in expected_messages_dict:
-                expected_message = expected_messages_dict[label]
-                if expected_message.guard():
-                    return expected_message
+        for expected_message in expected_messages_list:
+            if (message[0] == expected_message.label or expected_message.label == ANY) and expected_message.guard():
+                return expected_message
         return None
 
     def read_pipe(self):
