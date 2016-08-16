@@ -58,17 +58,17 @@ class MessageProc():
         """Send a message to the process with pid. If its pipe does noe exist, wait for a while and check again. If its pipe was there but has disappeared, which means the receiver has left, do not send messages anymore and raise an exception"""
         pipe_to_write = self.pipe_path_prefix + str(pid)
         if pid in self.pipes_written:
-            if not os.path.exists(pipe_to_write):
-                raise IOError("Receiver has exited")
-            else:
-                pipe = self.pipes_written[pid]
+            pipe = self.pipes_written[pid]
         else:
             while not os.path.exists(pipe_to_write):
                 time.sleep(0.1)
             pipe = open(pipe_to_write, 'wb')
             self.pipes_written[pid] = pipe
-        pickle.dump((label, values), pipe)
-        pipe.flush()
+        try:
+            pickle.dump((label, values), pipe)
+            pipe.flush()
+        except BrokenPipeError:
+            return
 
     def receive(self, *args):
         """
