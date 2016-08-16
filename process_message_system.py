@@ -64,7 +64,7 @@ class MessageProc():
                 pipe = self.pipes_written[pid]
         else:
             while not os.path.exists(pipe_to_write):
-                time.sleep(1)
+                time.sleep(0.1)
             pipe = open(pipe_to_write, 'wb')
             self.pipes_written[pid] = pipe
         pickle.dump((label, values), pipe)
@@ -158,7 +158,7 @@ class MessageProc():
                     with self.arrived_condition:
                         self.arrived_condition.notify()
                 except EOFError:
-                    time.sleep(1)
+                    time.sleep(0.1)
 
     def clean_up(self):
         """Close all the pipes to which this process has written and remove the pipe of itself"""
