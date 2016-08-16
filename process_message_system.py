@@ -164,5 +164,5 @@ class MessageProc():
         """Close all the pipes to which this process has written and remove the pipe of itself"""
         for pid, pipe in self.pipes_written.items():
             pipe.close();
-        if os.path.exists(self.pipe_path):
-            os.remove(self.pipe_path)
+        if os.path.exists(self.pipe_path_prefix + str(os.getpid())):
+            os.remove(self.pipe_path_prefix + str(os.getpid()))
