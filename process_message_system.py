@@ -26,7 +26,8 @@ class MessageProc():
 
     def init(self):
         """Initialise all instance fields"""
-        self.pipe_path = self.pipe_path_prefix + str(os.getpid())
+        self.pid = os.getpid()
+        self.pipe_path = self.pipe_path_prefix + str(self.pid)
         self.message_list = []
         self.pipes_written = {}
         self.queue = queue.Queue()
@@ -151,7 +152,9 @@ class MessageProc():
 
     def clean_up(self):
         """Close all the pipes to which this process has written and remove the pipe of itself"""
-        for pid, pipe in self.pipes_written.items():
-            pipe.close();
-        if os.path.exists(self.pipe_path_prefix + str(os.getpid())):
-            os.remove(self.pipe_path_prefix + str(os.getpid()))
+        # make sure the registered method is of the current process
+        if self.pid == os.getpid():
+            for pid, pipe in self.pipes_written.items():
+                pipe.close();
+            if os.path.exists(self.pipe_path):
+                os.remove(self.pipe_path)
