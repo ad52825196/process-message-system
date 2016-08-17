@@ -8,6 +8,7 @@ import threading
 import time
 
 ANY = 'any'
+SLEEPING_TIME = 0.001
 
 class Message():
     def __init__(self, label, guard = lambda: True, action = lambda: None):
@@ -61,7 +62,7 @@ class MessageProc():
             pipe = self.pipes_written[pid]
         else:
             while not os.path.exists(pipe_to_write):
-                time.sleep(0.1)
+                time.sleep(SLEEPING_TIME)
             pipe = open(pipe_to_write, 'wb')
             self.pipes_written[pid] = pipe
         try:
@@ -147,7 +148,7 @@ class MessageProc():
                     with self.arrived_condition:
                         self.arrived_condition.notify()
                 except EOFError:
-                    time.sleep(0.1)
+                    time.sleep(SLEEPING_TIME)
 
     def clean_up(self):
         """Close all the pipes to which this process has written and remove the pipe of itself"""
