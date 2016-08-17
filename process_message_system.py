@@ -63,11 +63,10 @@ class MessageProc():
         else:
             while not os.path.exists(pipe_to_write):
                 time.sleep(SLEEPING_TIME)
-            pipe = open(pipe_to_write, 'wb')
+            pipe = open(pipe_to_write, 'wb', buffering = 0)
             self.pipes_written[pid] = pipe
         try:
             pickle.dump((label, values), pipe)
-            pipe.flush()
         except BrokenPipeError:
             return
 
