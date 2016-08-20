@@ -144,8 +144,9 @@ class MessageProc():
         with open(self.pipe_path, 'rb') as pipe:
             while True:
                 try:
-                    self.queue.put(pickle.load(pipe))
+                    message = pickle.load(pipe)
                     with self.arrived_condition:
+                        self.queue.put(message)
                         self.arrived_condition.notify()
                 except EOFError:
                     time.sleep(SLEEPING_TIME)
