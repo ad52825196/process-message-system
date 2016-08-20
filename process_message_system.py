@@ -21,6 +21,9 @@ class TimeOut():
         self.time = time
         self.action = action
 
+    def decrease_time(self, decrease):
+        self.time -= decrease
+
 class MessageProc():
     pipe_path_prefix = tempfile.gettempdir() + '/pipe'
 
@@ -97,21 +100,18 @@ class MessageProc():
                 return matched_expected.action(*matched_message[1])
 
         queue_has_been_emptied = False
-        waiting_time = None
-        if timeout is not None:
-            waiting_time = timeout.time
         while matched_expected is None:
             try:
                 if not queue_has_been_emptied:
                     message = self.queue.get(False)
                 else:
-                    if waiting_time is not None and waiting_time <= 0:
+                    if timeout is not None and timeout.time <= 0:
                         raise queue.Empty()
                     start_time = time.time()
-                    message = self.queue.get(timeout = waiting_time)
+                    message = self.queue.get(timeout = timeout.time)
                     end_time = time.time()
-                    if waiting_time is not None:
-                        waiting_time -= end_time - start_time
+                    if timeout is not None:
+                        timeout.decrease_time(end_time - start_time)
             except queue.Empty:
                 if not queue_has_been_emptied:
                     queue_has_been_emptied = True
